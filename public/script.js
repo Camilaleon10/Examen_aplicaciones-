@@ -19,11 +19,10 @@ function abrirModal(juego) {
     const ahorro = juego.savings ? Math.round(Number(juego.savings)) : "-";
 
     const elTitulo = document.querySelector('#modal-titulo');
-    const elImagen = document.querySelector('#modal-imagen');
+    const elImagen = document.querySelector('#modal-img');
     const elPrecioNormal = document.querySelector('#modal-precio-normal');
     const elPrecioOferta = document.querySelector('#modal-precio-oferta');
-    const elAhorro = document.querySelector('#modal-ahorro');
-    const elEnlace = document.querySelector('#modal-enlace-tienda');
+    const elEnlace = document.querySelector('#modal-link');
 
     if (elTitulo) elTitulo.textContent = titulo;
     if (elImagen) {
@@ -32,17 +31,37 @@ function abrirModal(juego) {
     }
     if (elPrecioNormal) elPrecioNormal.textContent = normal !== "-" ? `$${normal}` : "No disponible";
     if (elPrecioOferta) elPrecioOferta.textContent = oferta !== "-" ? `$${oferta}` : "No disponible";
-    if (elAhorro) elAhorro.textContent = ahorro !== "-" ? `${ahorro}%` : "No disponible";
 
     let enlaceURL = "#";
-    if (juego.gameID) {
-        enlaceURL = `https://www.cheapshark.com/api/redirect/steam?appID=${juego.gameID}`;
-    } else if (juego.dealID) {
+    if (juego.dealID) {
         enlaceURL = `https://www.cheapshark.com/redirect?dealID=${juego.dealID}`;
+    } else if (juego.gameID) {
+        enlaceURL = `https://store.steampowered.com/app/${juego.gameID}`;
     }
     if (elEnlace) elEnlace.href = enlaceURL;
 
     if (modalDetalles) modalDetalles.classList.remove('hidden');
+}
+
+// Helper: intenta fetch directo y si falla por CORS usa un proxy público
+async function safeFetchJson(url) {
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Respuesta ${res.status}`);
+        return await res.json();
+    } catch (e) {
+        console.warn('fetch directo falló, intentando proxy CORS:', e);
+        // Proxy público para evadir problemas CORS (sólo para desarrollo)
+        const proxy = 'https://api.allorigins.win/raw?url=';
+        try {
+            const pRes = await fetch(proxy + encodeURIComponent(url));
+            if (!pRes.ok) throw new Error(`Proxy respuesta ${pRes.status}`);
+            return await pRes.json();
+        } catch (e2) {
+            console.error('Ambos fetch directos y con proxy fallaron', e2);
+            throw e2;
+        }
+    }
 }
 
 // Cierra el modal
@@ -110,9 +129,7 @@ async function cargarVideojuegosInicial() {
 
     try {
         const url = 'https://www.cheapshark.com/api/1.0/deals?storeID=1&pageSize=60&pageNumber=0';
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Respuesta ${res.status}`);
-        const data = await res.json();
+        const data = await safeFetchJson(url);
         juegosEnCache = data;
         juegosActuales = data;
         renderizarVideojuegos(data.slice(0, juegosPorPagina), false);
@@ -136,9 +153,7 @@ async function cargarMasJuegos() {
 
     try {
         const url = `https://www.cheapshark.com/api/1.0/deals?storeID=1&pageSize=${juegosPorPagina}&pageNumber=${paginaActual}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Respuesta ${res.status}`);
-        const data = await res.json();
+        const data = await safeFetchJson(url);
 
         if (!Array.isArray(data) || data.length === 0) {
             if (mensajeError) {
@@ -207,16 +222,16 @@ function ejecutarBusqueda() {
 
 // Esperar a que el DOM esté listo antes de obtener elementos y asignar listeners
 document.addEventListener('DOMContentLoaded', () => {
-    grid = document.querySelector('#grid-videogames');
-    estadoCarga = document.querySelector('#estado-de-carga');
-    mensajeError = document.querySelector('#mensaje-de-error');
+    grid = document.querySelector('#grid-videojuegos');
+    estadoCarga = document.querySelector('#spinner');
+    mensajeError = document.querySelector('#estado-error');
     btnVerMas = document.querySelector('#btn-ver-mas');
     inputBusqueda = document.querySelector('#input-busqueda');
-    modalDetalles = document.querySelector('#modal-detalles');
-    btnCerrarModal = document.querySelector('#btn-cerrar-modal');
+    modalDetalles = document.querySelector('#modal');
+    btnCerrarModal = document.querySelector('#modal-cerrar');
     btnBuscar = document.querySelector('#btn-buscar');
-    selectPlataforma = document.querySelector('#select-plataforma');
-    selectOrdenar = document.querySelector('#select-ordenar');
+    selectPlataforma = document.querySelector('#select-tienda');
+    selectOrdenar = document.querySelector('#select-orden');
 
     if (btnVerMas) btnVerMas.addEventListener('click', cargarMasJuegos);
     if (btnCerrarModal) btnCerrarModal.addEventListener('click', cerrarModal);
