@@ -182,17 +182,32 @@ async function cargarMasJuegos() {
 // Filtrado y ordenamiento
 function aplicarFiltros() {
     const termino = inputBusqueda ? inputBusqueda.value.trim().toLowerCase() : "";
-    const plataforma = selectPlataforma ? selectPlataforma.value : "";
+    const tienda = selectPlataforma ? selectPlataforma.value : "";
 
     let resultados = juegosEnCache.filter(juego => {
         const titulo = (juego.title || juego.external || "").toLowerCase();
         const cumpleBusqueda = termino === "" || titulo.includes(termino);
-        // actualmente no filtramos por plataforma porque la API no devuelve plataforma consistente
-        return cumpleBusqueda;
+        
+        // Filtrar por tienda si se selecciona una específica
+        const cumpeTienda = tienda === "" || juego.storeID == tienda;
+        
+        return cumpleBusqueda && cumpeTienda;
     });
 
     const ordenar = selectOrdenar ? selectOrdenar.value : "";
-    if (ordenar === "rating") {
+    if (ordenar === "precio-asc") {
+        resultados.sort((a, b) => {
+            const precioA = parseFloat(a.salePrice || a.cheapest || 0);
+            const precioB = parseFloat(b.salePrice || b.cheapest || 0);
+            return precioA - precioB;
+        });
+    } else if (ordenar === "precio-desc") {
+        resultados.sort((a, b) => {
+            const precioA = parseFloat(a.salePrice || a.cheapest || 0);
+            const precioB = parseFloat(b.salePrice || b.cheapest || 0);
+            return precioB - precioA;
+        });
+    } else if (ordenar === "rating") {
         resultados.sort((a, b) => (b.metacriticScore || 0) - (a.metacriticScore || 0));
     } else if (ordenar === "recent") {
         resultados.sort((a, b) => (b.steamRatingCount || 0) - (a.steamRatingCount || 0));
