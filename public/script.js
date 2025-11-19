@@ -80,7 +80,7 @@ function crearCard(juego) {
     const precioNormal = juego.normalPrice ?? "-";
     const ahorro = juego.savings ? `${Math.round(Number(juego.savings))}%` : null;
     const rating = juego.rating ?? juego.steamRating ?? "N/A";
-
+9
     card.innerHTML = `
         <img src="${thumb}" alt="${titulo}" class="h-40 w-full object-cover" />
         <div class="p-4 flex flex-col gap-2 flex-1">
@@ -92,7 +92,7 @@ function crearCard(juego) {
             </p>
             <p class="text-sm text-slate-600 flex-1">${juego.description || juego.shortDescription || ""}</p>
             <div class="mt-4 flex items-center justify-between">
-                <span class="text-yellow-500 font-semibold">⭐ ${rating}</span>
+                <span class="text-yellow-500 font-semibold"> ${rating}</span>
                 <button class="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 btn-detalles">Ver detalles</button>
             </div>
         </div>
@@ -186,23 +186,16 @@ async function cargarMasJuegos() {
 // Filtrado y ordenamiento
 function aplicarFiltros() {
     const termino = inputBusqueda ? inputBusqueda.value.trim().toLowerCase() : "";
-    const plataforma = selectPlataforma ? selectPlataforma.value : "";
+    const tienda = selectPlataforma ? selectPlataforma.value : "";
 
     let resultados = juegosEnCache.filter(juego => {
         const titulo = (juego.title || juego.external || "").toLowerCase();
         const cumpleBusqueda = termino === "" || titulo.includes(termino);
         
-        // Filtrar por plataforma
-        let cumplePlataforma = true;
-        if (plataforma === "pc") {
-            cumplePlataforma = juego.steamAppID || juego.storeID === 1 || juego.storeID === 7; // Steam, Epic
-        } else if (plataforma === "consola") {
-            cumplePlataforma = juego.storeID === 2 || juego.storeID === 3 || juego.storeID === 4 || juego.storeID === 32; // Xbox, PS, Nintendo
-        } else if (plataforma === "celular") {
-            cumplePlataforma = juego.storeID === 18 || juego.storeID === 34 || juego.storeID === 37; // Mobile stores
-        }
+        // Filtrar por tienda si se selecciona una específica
+        const cumpeTienda = tienda === "" || juego.storeID == tienda;
         
-        return cumpleBusqueda && cumplePlataforma;
+        return cumpleBusqueda && cumpeTienda;
     });
 
     const ordenar = selectOrdenar ? selectOrdenar.value : "";
@@ -247,6 +240,23 @@ function ejecutarBusqueda() {
     if (estadoCarga) estadoCarga.classList.add('hidden');
 }
 
+// Filtrar por cambio de selector (tienda/ordenamiento) sin limpiar todo
+function filtrarYActualizar() {
+    if (!grid) return;
+    const resultados = aplicarFiltros();
+    if (resultados && resultados.length > 0) {
+        grid.innerHTML = '';
+        renderizarVideojuegos(resultados, true);
+        if (mensajeError) mensajeError.classList.add('hidden');
+    } else {
+        grid.innerHTML = '';
+        if (mensajeError) {
+            mensajeError.textContent = "No se encontraron videojuegos con ese criterio.";
+            mensajeError.classList.remove('hidden');
+        }
+    }
+}
+
 // Esperar a que el DOM esté listo antes de obtener elementos y asignar listeners
 document.addEventListener('DOMContentLoaded', () => {
     grid = document.querySelector('#grid-videojuegos');
@@ -280,8 +290,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Enter') ejecutarBusqueda();
         });
     }
-    if (selectPlataforma) selectPlataforma.addEventListener('change', ejecutarBusqueda);
-    if (selectOrdenar) selectOrdenar.addEventListener('change', ejecutarBusqueda);
+    if (selectPlataforma) selectPlataforma.addEventListener('change', filtrarYActualizar);
+    if (selectOrdenar) selectOrdenar.addEventListener('change', filtrarYActualizar);
 
     cargarVideojuegosInicial();
 });
