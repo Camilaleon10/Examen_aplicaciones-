@@ -134,6 +134,10 @@ async function cargarVideojuegosInicial() {
         juegosActuales = data;
         renderizarVideojuegos(data.slice(0, juegosPorPagina), false);
         paginaActual++;
+        // Mostrar el botón "Ver más" si hay más juegos
+        if (btnVerMas) {
+            btnVerMas.classList.remove('hidden');
+        }
     } catch (e) {
         console.error("Error al cargar Cheapshark", e);
         if (mensajeError) {
@@ -229,6 +233,7 @@ function aplicarFiltros() {
 function ejecutarBusqueda() {
     if (estadoCarga) estadoCarga.classList.remove("hidden");
     if (grid) grid.innerHTML = '';
+    if (btnVerMas) btnVerMas.classList.add('hidden'); // Ocultar "Ver más" durante búsqueda
     const resultados = aplicarFiltros();
     if (!resultados || resultados.length === 0) {
         if (mensajeError) {
