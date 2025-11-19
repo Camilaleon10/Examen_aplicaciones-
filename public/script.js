@@ -182,16 +182,23 @@ async function cargarMasJuegos() {
 // Filtrado y ordenamiento
 function aplicarFiltros() {
     const termino = inputBusqueda ? inputBusqueda.value.trim().toLowerCase() : "";
-    const tienda = selectPlataforma ? selectPlataforma.value : "";
+    const plataforma = selectPlataforma ? selectPlataforma.value : "";
 
     let resultados = juegosEnCache.filter(juego => {
         const titulo = (juego.title || juego.external || "").toLowerCase();
         const cumpleBusqueda = termino === "" || titulo.includes(termino);
         
-        // Filtrar por tienda si se selecciona una específica
-        const cumpeTienda = tienda === "" || juego.storeID == tienda;
+        // Filtrar por plataforma
+        let cumplePlataforma = true;
+        if (plataforma === "pc") {
+            cumplePlataforma = juego.steamAppID || juego.storeID === 1 || juego.storeID === 7; // Steam, Epic
+        } else if (plataforma === "consola") {
+            cumplePlataforma = juego.storeID === 2 || juego.storeID === 3 || juego.storeID === 4 || juego.storeID === 32; // Xbox, PS, Nintendo
+        } else if (plataforma === "celular") {
+            cumplePlataforma = juego.storeID === 18 || juego.storeID === 34 || juego.storeID === 37; // Mobile stores
+        }
         
-        return cumpleBusqueda && cumpeTienda;
+        return cumpleBusqueda && cumplePlataforma;
     });
 
     const ordenar = selectOrdenar ? selectOrdenar.value : "";
